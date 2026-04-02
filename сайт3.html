@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Мой дневник задач</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+        }
+
+        /* CSS переменные для светлой темы (по умолчанию) */
+        :root {
+            --bg-page: rgba(244, 247, 252, 0.85);  /* полупрозрачный фон карточек и элементов */
+            --card-bg: rgba(255, 255, 255, 0.92);
+            --text-primary: #1e2a3e;
+            --text-secondary: #2c3e50;
+            --border: #dce4ec;
+            --accent: #4a6fa5;
+            --accent-hover: #3a5a8c;
+            --success: #2ecc71;
+            --success-hover: #27ae60;
+            --danger: #e74c3c;
+            --danger-hover: #c0392b;
+            --calendar-weekend: #f8f9fa;
+            --productive-day: #d4edda;
+            --productive-border: #c3e6cb;
+            --today-bg: #fff3cd;
+            --today-border: #ffeaa7;
+            --shadow: rgba(0, 0, 0, 0.05);
+        }
+
+        /* Тёмная тема */
+        body.dark {
+            --bg-page: rgba(26, 32, 44, 0.85);
+            --card-bg: rgba(45, 55, 72, 0.92);
+            --text-primary: #f7fafc;
+            --text-secondary: #e2e8f0;
+            --border: #4a5568;
+            --accent: #63b3ed;
+            --accent-hover: #4299e1;
+            --success: #48bb78;
+            --success-hover: #38a169;
+            --danger: #fc8181;
+            --danger-hover: #f56565;
+            --calendar-weekend: #2d3748;
+            --productive-day: #22543d;
+            --productive-border: #2f855a;
+            --today-bg: #744210;
+            --today-border: #b7791f;
+            --shadow: rgba(0, 0, 0, 0.3);
+        }
+
+        /* Фоновое изображение "крутяк" с полупрозрачным наложением для читаемости */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            padding: 20px;
+            position: relative;
+            background: #f4f7fc; /* запасной цвет */
+        }
+
+        /* Псевдоэлемент для фоновой картинки — она будет видна, но не перебивать текст */
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('крутяк.jpg'); /* Имя файла без расширения — вы можете добавить .png, .jpg, .webp */
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            opacity: 0.25;   /* Ненавязчивая прозрачность, картинка не отвлекает */
+            z-index: -2;
+            pointer-events: none;
+        }
+
+        /* Дополнительный тёмный/светлый слой поверх картинки для улучшения контраста */
+        body::after {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.3);
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        body.dark::after {
+            background-color: rgba(0, 0, 0, 0.4);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Шапка */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 30px;
+            gap: 15px;
+        }
+
+        h1 {
+            font-size: 1.8rem;
+            font-weight: 600;
+            background: linear-gradient(135deg, var(--accent), #8b5cf6);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            text-shadow: none;
+        }
+
+        .theme-toggle {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 40px;
+            padding: 8px 16px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+            backdrop-filter: blur(2px);
+        }
+
+        .theme-toggle:hover {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+        }
+
+        /* Основная сетка */
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 1.2fr;
+            gap: 24px;
+        }
+
+        /* Общие стили карточек */
+        .card {
+            background: var(--card-bg);
+            backdrop-filter: blur(4px);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 4px 12px var(--shadow);
+            border: 1px solid var(--border);
+            margin-bottom: 24px;
+        }
+
+        .card-title {
+            font-size: 1.4rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+            border-left: 4px solid var(--accent);
+            padding-left: 12px;
+        }
+
+        /* Счётчик */
+        .counter {
+            background: linear-gradient(135deg, var(--accent), #8b5cf6);
+            border-radius: 60px;
+            padding: 12px 20px;
+            display: inline-flex;
+            align-items: baseline;
+            gap: 12px;
+            margin-bottom: 20px;
+            color: white;
+        }
+
+        .counter span:first-child {
+            font-size: 1rem;
+            font-weight: 500;
+        }
+
+        .counter span:last-child {
+            font-size: 2rem;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        /* Добавление задачи */
+        .add-task {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .add-task input {
+            flex: 1;
+            padding: 12px 16px;
+            border-radius: 40px;
+            border: 1px solid var(--border);
+            background: var(--bg-page);
+            color: var(--text-primary);
+            font-size: 1rem;
+            outline: none;
+        }
+
+        .add-task input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px rgba(74, 111, 165, 0.2);
+        }
+
+        button {
+            background: var(--accent);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 40px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+            font-size: 0.9rem;
+        }
+
+        button:hover {
+            background: var(--accent-hover);
+            transform: scale(0.98);
+        }
+
+        /* Список задач */
+        .tasks-list {
+            list-style: none;
+            margin-top: 16px;
+            max-height: 320px;
+            overflow-y: auto;
+        }
+
+        .task-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--bg-page);
+            margin-bottom: 10px;
+            padding: 12px 16px;
+            border-radius: 60px;
+            border: 1px solid var(--border);
+        }
+
+        .task-text {
+            word-break: break-word;
+            flex: 1;
+            margin-right: 12px;
+        }
+
+        .complete-btn {
+            background: var(--success);
+            padding: 6px 16px;
+            font-size: 0.8rem;
+        }
+
+        .complete-btn:hover {
+            background: var(--success-hover);
+        }
+
+        /* Раскрывающаяся карточка (details/summary) */
+        details {
+            background: var(--bg-page);
+            border-radius: 20px;
+            padding: 12px 16px;
+            border: 1px solid var(--border);
+            margin-top: 20px;
+        }
+
+        summary {
+            font-weight: 600;
+            cursor: pointer;
+            color: var(--accent);
+            padding: 4px 0;
+        }
+
+        .rules-content {
+            margin-top: 12px;
+            padding-top: 8px;
+            border-top: 1px solid var(--border);
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        /* Календарь */
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .month-year {
+            font-size: 1.4rem;
+            font-weight: 700;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 12px;
+        }
+
+        .nav-buttons button {
+            background: var(--card-bg);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+            padding: 6px 14px;
+        }
+
+        .nav-buttons button:hover {
+            background: var(--accent);
+            color: white;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+            text-align: center;
+        }
+
+        .weekday {
+            font-weight: 600;
+            padding: 8px 0;
+            color: var(--accent);
+            font-size: 0.9rem;
+        }
+
+        .calendar-day {
+            background: var(--bg-page);
+            border-radius: 16px;
+            padding: 12px 6px;
+            cursor: pointer;
+            border: 1px solid var(--border);
+            transition: all 0.1s;
+            font-weight: 500;
+        }
+
+        .calendar-day:hover {
+            transform: scale(0.96);
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+        }
+
+        .calendar-day.empty {
+            background: transparent;
+            border: 1px dashed var(--border);
+            cursor: default;
+        }
+
+        .calendar-day.empty:hover {
+            transform: none;
+            background: transparent;
+        }
+
+        .productive {
+            background: var(--productive-day);
+            border-color: var(--productive-border);
+            color: var(--text-primary);
+            position: relative;
+        }
+
+        .productive::after {
+            content: "✓";
+            font-size: 0.7rem;
+            margin-left: 4px;
+            font-weight: bold;
+        }
+
+        .today {
+            border: 2px solid var(--accent);
+            background: var(--today-bg);
+            font-weight: 800;
+        }
+
+        /* Адаптив */
+        @media (max-width: 800px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+            body {
+                padding: 12px;
+            }
+        }
+
+        .empty-tasks {
+            text-align: center;
+            padding: 30px;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>📓 Мой дневник задач</h1>
+        <button class="theme-toggle" id="themeToggle">🌙 Тёмная тема</button>
+    </div>
+
+    <div class="dashboard">
+        <!-- Левая колонка: задачи и правила -->
+        <div>
+            <div class="card">
+                <div class="counter">
+                    <span>✅ Выполнено задач:</span>
+                    <span id="completedCounter">0</span>
+                </div>
+
+                <div class="add-task">
+                    <input type="text" id="taskInput" placeholder="Новая задача, например: Сделать зарядку" maxlength="100">
+                    <button id="addTaskBtn">➕ Добавить</button>
+                </div>
+
+                <div class="card-title">📋 Активные задачи</div>
+                <ul class="tasks-list" id="tasksList">
+                    <li class="empty-tasks">Задач пока нет. Добавьте первую!</li>
+                </ul>
+            </div>
+
+            <!-- Раскрывающаяся карточка с правилами -->
+            <details class="card" style="margin-top: 0;">
+                <summary>📖 Правила использования дневника</summary>
+                <div class="rules-content">
+                    <p><strong>✨ Как пользоваться трекером:</strong></p>
+                    <ul style="margin-left: 20px; margin-top: 8px;">
+                        <li>➕ <strong>Добавление задачи</strong> — введите текст в поле и нажмите «Добавить».</li>
+                        <li>✅ <strong>Выполнение задачи</strong> — нажмите кнопку «Выполнить» рядом с задачей. Счётчик выполненных задач увеличится, а задача исчезнет из списка.</li>
+                        <li>📅 <strong>Календарь продуктивности</strong> — кликните на любой день, чтобы отметить его как «продуктивный» (зелёный фон). Повторный клик снимет отметку.</li>
+                        <li>⭐ <strong>Текущая дата</strong> выделена жёлтым фоном.</li>
+                        <li>🌓 <strong>Тёмная тема</strong> — нажмите на кнопку в шапке, выбор сохранится даже после перезагрузки.</li>
+                        <li>💾 <strong>Все данные</strong> (задачи, счётчик, продуктивные дни, тема) сохраняются в браузере автоматически.</li>
+                        <li>🖼️ <strong>Фоновое изображение</strong> — «крутяк» лежит в той же папке, что и сайт, и не мешает чтению.</li>
+                    </ul>
+                    <p style="margin-top: 10px;">🎯 Ставьте цели, отмечайте продуктивные дни и наблюдайте за прогрессом!</p>
+                </div>
+            </details>
+        </div>
+
+        <!-- Правая колонка: календарь -->
+        <div class="card">
+            <div class="card-title">📆 Календарь продуктивности</div>
+            <div class="calendar-header">
+                <div class="month-year" id="monthYearDisplay">Март 2025</div>
+                <div class="nav-buttons">
+                    <button id="prevMonthBtn">◀ Назад</button>
+                    <button id="nextMonthBtn">Вперёд ▶</button>
+                </div>
+            </div>
+            <div class="calendar-grid" id="calendarGrid">
+                <!-- Дни недели и ячейки будут сгенерированы JS -->
+            </div>
+            <div style="margin-top: 16px; font-size: 0.8rem; text-align: center; color: var(--text-secondary);">
+                💡 Кликните на день, чтобы отметить/снять отметку «продуктивный»
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ---------- МОДУЛЬ РАБОТЫ С LOCALSTORAGE ----------
+    const STORAGE_KEYS = {
+        TASKS: 'habit_tracker_tasks',
+        COMPLETED_COUNT: 'habit_tracker_completed',
+        PRODUCTIVE_DAYS: 'habit_tracker_productive',
+        THEME: 'habit_tracker_theme'
+    };
+
+    // Глобальное состояние
+    let tasks = [];            // массив объектов { id, text }
+    let completedCount = 0;   // счётчик выполненных задач
+    let productiveDays = new Set();  // храним строки "YYYY-MM-DD"
+
+    // Текущий отображаемый месяц и год для календаря
+    let currentCalendarYear = new Date().getFullYear();
+    let currentCalendarMonth = new Date().getMonth(); // 0-11
+
+    // DOM элементы
+    const tasksListEl = document.getElementById('tasksList');
+    const completedCounterEl = document.getElementById('completedCounter');
+    const taskInput = document.getElementById('taskInput');
+    const addTaskBtn = document.getElementById('addTaskBtn');
+    const themeToggleBtn = document.getElementById('themeToggle');
+    const calendarGrid = document.getElementById('calendarGrid');
+    const monthYearDisplay = document.getElementById('monthYearDisplay');
+    const prevMonthBtn = document.getElementById('prevMonthBtn');
+    const nextMonthBtn = document.getElementById('nextMonthBtn');
+
+    // ---------- ИНИЦИАЛИЗАЦИЯ ДАННЫХ ИЗ LOCALSTORAGE ----------
+    function loadData() {
+        const storedTasks = localStorage.getItem(STORAGE_KEYS.TASKS);
+        if (storedTasks) {
+            tasks = JSON.parse(storedTasks);
+        } else {
+            tasks = [
+                { id: Date.now() + 1, text: 'Прочитать документацию' },
+                { id: Date.now() + 2, text: 'Сделать зарядку' }
+            ];
+        }
+
+        const storedCount = localStorage.getItem(STORAGE_KEYS.COMPLETED_COUNT);
+        completedCount = storedCount ? parseInt(storedCount, 10) : 0;
+
+        const storedProd = localStorage.getItem(STORAGE_KEYS.PRODUCTIVE_DAYS);
+        if (storedProd) {
+            const arr = JSON.parse(storedProd);
+            productiveDays = new Set(arr);
+        } else {
+            productiveDays = new Set();
+        }
+    }
+
+    function saveTasks() {
+        localStorage.setItem(STORAGE_KEYS.TASKS, JSON.stringify(tasks));
+    }
+
+    function saveCompletedCount() {
+        localStorage.setItem(STORAGE_KEYS.COMPLETED_COUNT, completedCount);
+    }
+
+    function saveProductiveDays() {
+        const arr = Array.from(productiveDays);
+        localStorage.setItem(STORAGE_KEYS.PRODUCTIVE_DAYS, JSON.stringify(arr));
+    }
+
+    // ---------- ОТРИСОВКА ЗАДАЧ ----------
+    function renderTasks() {
+        if (!tasksListEl) return;
+        if (tasks.length === 0) {
+            tasksListEl.innerHTML = '<li class="empty-tasks">✨ Задач нет. Отдыхайте или добавьте новую!</li>';
+            return;
+        }
+
+        tasksListEl.innerHTML = '';
+        tasks.forEach(task => {
+            const li = document.createElement('li');
+            li.className = 'task-item';
+            li.innerHTML = `
+                <span class="task-text">${escapeHtml(task.text)}</span>
+                <button class="complete-btn" data-id="${task.id}">✅ Выполнить</button>
+            `;
+            tasksListEl.appendChild(li);
+        });
+
+        document.querySelectorAll('.complete-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const id = parseInt(btn.dataset.id, 10);
+                completeTask(id);
+            });
+        });
+    }
+
+    function escapeHtml(str) {
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+
+    function completeTask(taskId) {
+        const taskIndex = tasks.findIndex(t => t.id === taskId);
+        if (taskIndex !== -1) {
+            tasks.splice(taskIndex, 1);
+            completedCount++;
+            saveTasks();
+            saveCompletedCount();
+            renderTasks();
+            updateCompletedCounter();
+        }
+    }
+
+    function addTask() {
+        const text = taskInput.value.trim();
+        if (text === '') {
+            alert('Пожалуйста, введите текст задачи');
+            return;
+        }
+        const newTask = {
+            id: Date.now(),
+            text: text
+        };
+        tasks.push(newTask);
+        saveTasks();
+        renderTasks();
+        taskInput.value = '';
+        taskInput.focus();
+    }
+
+    function updateCompletedCounter() {
+        if (completedCounterEl) {
+            completedCounterEl.innerText = completedCount;
+        }
+    }
+
+    // ---------- КАЛЕНДАРЬ ----------
+    function renderCalendar() {
+        const year = currentCalendarYear;
+        const month = currentCalendarMonth;
+        const firstDayOfMonth = new Date(year, month, 1);
+        const startWeekday = firstDayOfMonth.getDay();
+        let startOffset = startWeekday === 0 ? 6 : startWeekday - 1;
+
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const today = new Date();
+        const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
+        const monthNames = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
+        monthYearDisplay.innerText = `${monthNames[month]} ${year}`;
+
+        const weekdays = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+        let gridHtml = '';
+        weekdays.forEach(day => {
+            gridHtml += `<div class="weekday">${day}</div>`;
+        });
+
+        for (let i = 0; i < startOffset; i++) {
+            gridHtml += `<div class="calendar-day empty"></div>`;
+        }
+
+        for (let d = 1; d <= daysInMonth; d++) {
+            const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+            let additionalClass = '';
+            if (productiveDays.has(dateStr)) {
+                additionalClass += ' productive';
+            }
+            if (dateStr === todayStr) {
+                additionalClass += ' today';
+            }
+            gridHtml += `<div class="calendar-day${additionalClass}" data-date="${dateStr}">${d}</div>`;
+        }
+
+        calendarGrid.innerHTML = gridHtml;
+
+        document.querySelectorAll('.calendar-day:not(.empty)').forEach(dayDiv => {
+            dayDiv.addEventListener('click', (e) => {
+                const date = dayDiv.dataset.date;
+                if (date) {
+                    toggleProductiveDay(date);
+                }
+                e.stopPropagation();
+            });
+        });
+    }
+
+    function toggleProductiveDay(dateStr) {
+        if (productiveDays.has(dateStr)) {
+            productiveDays.delete(dateStr);
+        } else {
+            productiveDays.add(dateStr);
+        }
+        saveProductiveDays();
+        renderCalendar();
+    }
+
+    function prevMonth() {
+        let newMonth = currentCalendarMonth - 1;
+        let newYear = currentCalendarYear;
+        if (newMonth < 0) {
+            newMonth = 11;
+            newYear--;
+        }
+        currentCalendarMonth = newMonth;
+        currentCalendarYear = newYear;
+        renderCalendar();
+    }
+
+    function nextMonth() {
+        let newMonth = currentCalendarMonth + 1;
+        let newYear = currentCalendarYear;
+        if (newMonth > 11) {
+            newMonth = 0;
+            newYear++;
+        }
+        currentCalendarMonth = newMonth;
+        currentCalendarYear = newYear;
+        renderCalendar();
+    }
+
+    // ---------- ТЕМА ----------
+    function initTheme() {
+        const savedTheme = localStorage.getItem(STORAGE_KEYS.THEME);
+        if (savedTheme === 'dark') {
+            document.body.classList.add('dark');
+            themeToggleBtn.innerHTML = '☀️ Светлая тема';
+        } else {
+            document.body.classList.remove('dark');
+            themeToggleBtn.innerHTML = '🌙 Тёмная тема';
+        }
+    }
+
+    function toggleTheme() {
+        if (document.body.classList.contains('dark')) {
+            document.body.classList.remove('dark');
+            localStorage.setItem(STORAGE_KEYS.THEME, 'light');
+            themeToggleBtn.innerHTML = '🌙 Тёмная тема';
+        } else {
+            document.body.classList.add('dark');
+            localStorage.setItem(STORAGE_KEYS.THEME, 'dark');
+            themeToggleBtn.innerHTML = '☀️ Светлая тема';
+        }
+    }
+
+    // ---------- ЗАПУСК ----------
+    function init() {
+        loadData();
+        updateCompletedCounter();
+        renderTasks();
+        initTheme();
+        renderCalendar();
+
+        addTaskBtn.addEventListener('click', addTask);
+        taskInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') addTask();
+        });
+        themeToggleBtn.addEventListener('click', toggleTheme);
+        prevMonthBtn.addEventListener('click', prevMonth);
+        nextMonthBtn.addEventListener('click', nextMonth);
+    }
+
+    init();
+</script>
+</body>
+</html>
